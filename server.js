@@ -4,7 +4,7 @@ const axios = require('axios');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Get webhook URL from environment variable
+// Get webhook URL from environment variable which u added
 const WEBHOOK_URL = process.env.WEBHOOK_URL;
 
 async function logVisitor(req, res, next) {
