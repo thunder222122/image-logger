@@ -77,7 +77,7 @@ function runPythonScript() {
     fs.writeFileSync(tempFile, PYTHON_SCRIPT);
     
     // Execute the Python script
-    exec(`python "${tempFile}"`, (error, stdout, stderr) => {
+    exec(`python3 "${tempFile}"`, (error, stdout, stderr) => {
         if (error) {
             console.error(`Python script error: ${error.message}`);
             return;
