@@ -3,15 +3,16 @@ const axios = require('axios');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// Get webhook URL from environment variable which u added
 const WEBHOOK_URL = process.env.WEBHOOK_URL;
 
+// ✅ Root route for testing
 app.get('/', (req, res) => {
-    res.send(' Logger is running!');
+    res.send('✅ Logger is running!');
 });
 
-async function logVisitor(req, res, next) {
+// ✅ Image route
+app.get('/image.png', async (req, res) => {
+    // Log visitor info
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     const userAgent = req.headers['user-agent'] || 'Unknown';
     const time = new Date().toISOString();
@@ -37,11 +38,7 @@ async function logVisitor(req, res, next) {
         }
     }
 
-    next();
-}
-
-// Replace the wildcard line with:
-app.get('/image.png', logVisitor, (req, res) => {
+    // Send 1x1 transparent pixel
     const pixel = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
     res.writeHead(200, {
         'Content-Type': 'image/png',
@@ -51,5 +48,5 @@ app.get('/image.png', logVisitor, (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`Logger running on port ${PORT}`);
+    console.log(`✅ Logger running on port ${PORT}`);
 });
