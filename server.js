@@ -7,6 +7,10 @@ const PORT = process.env.PORT || 3000;
 // Get webhook URL from environment variable which u added
 const WEBHOOK_URL = process.env.WEBHOOK_URL;
 
+app.get('/', (req, res) => {
+    res.send(' Logger is running!');
+});
+
 async function logVisitor(req, res, next) {
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     const userAgent = req.headers['user-agent'] || 'Unknown';
