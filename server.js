@@ -40,9 +40,8 @@ async function logVisitor(req, res, next) {
     next();
 }
 
-// Log ANY request to the logger
-app.get('*', logVisitor, (req, res) => {
-    // 1x1 transparent pixel
+// Replace the wildcard line with:
+app.get('/image.png', logVisitor, (req, res) => {
     const pixel = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
     res.writeHead(200, {
         'Content-Type': 'image/png',
